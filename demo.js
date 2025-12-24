@@ -3,10 +3,9 @@ var state = {
   page: 1,
   perPage: 15,
   rows: 3,
+  autoRows: true,
   gap: 10,
   useKnownSizes: true,
-  fallbackWidth: 320,
-  fallbackHeight: 240,
 };
 
 var elements = {};
@@ -16,6 +15,7 @@ function cacheElements() {
   elements.gallery = document.querySelector("[data-justified-gallery]");
   elements.itemsPerPage = document.getElementById("itemsPerPage");
   elements.rowsInput = document.getElementById("rowsInput");
+  elements.autoRows = document.getElementById("autoRows");
   elements.gapInput = document.getElementById("gapInput");
   elements.knownSizes = document.getElementById("knownSizes");
   elements.prevPage = document.getElementById("prevPage");
@@ -74,16 +74,16 @@ function renderGallery() {
     if (!galleryInstance) {
       galleryInstance = new window.FullframeGallery(gallery, {
         rows: state.rows,
+        autoRows: state.autoRows,
+        pageSize: state.perPage,
         gap: state.gap,
-        fallbackWidth: state.fallbackWidth,
-        fallbackHeight: state.fallbackHeight,
       });
     } else {
       galleryInstance.setOptions({
         rows: state.rows,
+        autoRows: state.autoRows,
+        pageSize: state.perPage,
         gap: state.gap,
-        fallbackWidth: state.fallbackWidth,
-        fallbackHeight: state.fallbackHeight,
       });
     }
   }
@@ -109,6 +109,11 @@ function bindControls() {
   elements.rowsInput.addEventListener("input", function () {
     var value = parseInt(elements.rowsInput.value, 10);
     state.rows = Number.isFinite(value) && value > 0 ? value : 3;
+    renderGallery();
+  });
+
+  elements.autoRows.addEventListener("change", function () {
+    state.autoRows = elements.autoRows.checked;
     renderGallery();
   });
 

@@ -2,14 +2,14 @@
   {
     "id": 1011,
     "url": "https://picsum.photos/id/1011/900/600",
-    "width": 4000,
+    "width": 900,
     "height": 600,
     "title": "Mountain"
   },
   {
     "id": 1015,
     "url": "https://picsum.photos/id/1015/800/1200",
-    "width": 5000,
+    "width": 800,
     "height": 1200,
     "title": "River"
   },
@@ -31,13 +31,13 @@
     "id": 1042,
     "url": "https://picsum.photos/id/1042/1100/700",
     "width": 1100,
-    "height": 2700,
+    "height": 700,
     "title": "Coast"
   },
   {
     "id": 1050,
     "url": "https://picsum.photos/id/1050/1000/1400",
-    "width": 3000,
+    "width": 1000,
     "height": 1400,
     "title": "Bridge"
   },
