@@ -186,18 +186,19 @@ function mergeOptions(baseOptions, nextOptions) {
 /**
  * Собирает данные по изображениям: DOM-элементы и исходные размеры.
  * @param {Element} container
- * @returns {Array<{itemEl: Element, imgEl: HTMLImageElement, width: (number|null), height: (number|null)}>}
+ * @param {{skeletonRatio: number}} options
+ * @returns {Array<{itemEl: Element, imgEl: HTMLImageElement, width: number, height: number}>}
  */
-function buildItemList(container) {
+function buildItemList(container, options) {
   return Array.prototype.slice.call(container.querySelectorAll('.gallery-item')).map(function (itemEl) {
     var imgEl = itemEl.querySelector('img');
     var width = parseInt(imgEl.dataset.width, 10) || imgEl.naturalWidth;
     var height = parseInt(imgEl.dataset.height, 10) || imgEl.naturalHeight;
     if (!Number.isFinite(width) || width <= 0) {
-      width = null;
+      width = ESTIMATE_ROW_HEIGHT * options.skeletonRatio;
     }
     if (!Number.isFinite(height) || height <= 0) {
-      height = null;
+      height = ESTIMATE_ROW_HEIGHT;
     }
     return {
       itemEl: itemEl,
@@ -208,52 +209,6 @@ function buildItemList(container) {
   });
 }
 
-/**
- * Строит скелетон-раскладку, если размеры изображений еще неизвестны.
- * @param {Element} container
- * @param {Array<{itemEl: Element, imgEl: HTMLImageElement, width: (number|null), height: (number|null)}>} items
- * @param {number} rowsNumber
- * @param {number} gap
- * @param {number} containerWidth
- * @param {{skeletonRatio: number}} options
- */
-function layoutSkeleton(container, items, rowsNumber, gap, containerWidth, options) {
-  var total = items.length;
-  var base = Math.floor(total / rowsNumber);
-  var remainder = total % rowsNumber;
-  var rows = [];
-  var index = 0;
-  var skeletonRatio = options.skeletonRatio;
-
-  for (var i = 0; i < rowsNumber; i += 1) {
-    var count = base + (i < remainder ? 1 : 0);
-    rows[i] = items.slice(index, index + count);
-    index += count;
-  }
-
-  var fragment = document.createDocumentFragment();
-  rows.forEach(function (row) {
-    if (!row.length) {
-      return;
-    }
-    var rowEl = document.createElement('div');
-    rowEl.className = 'gallery-row';
-    var availableWidth = Math.max(containerWidth - gap * (row.length - 1), MIN_AVAILABLE_WIDTH_PX);
-    var widthPerItem = availableWidth / row.length;
-    var heightPerItem = widthPerItem / skeletonRatio;
-
-    row.forEach(function (item) {
-      item.itemEl.style.width = widthPerItem + 'px';
-      item.itemEl.style.height = heightPerItem + 'px';
-      rowEl.appendChild(item.itemEl);
-    });
-
-    fragment.appendChild(rowEl);
-  });
-
-  container.innerHTML = '';
-  container.appendChild(fragment);
-}
 
 /**
  * Пересчитывает и раскладывает галерею: разбивает на строки и задает размеры.
@@ -262,11 +217,12 @@ function layoutSkeleton(container, items, rowsNumber, gap, containerWidth, optio
  *   rows: (number|null),
  *   autoRows: boolean,
  *   pageSize: (number|null),
+ *   skeletonRatio: number,
  *   gap: (number|null),
  * }} options
  */
 function layoutGallery(container, options) {
-  var items = buildItemList(container);
+  var items = buildItemList(container, options);
   var total = items.length;
   if (!total) {
     return;
@@ -289,15 +245,6 @@ function layoutGallery(container, options) {
     container.style.setProperty('--gallery-gap', options.gap + 'px');
   }
   var gap = Number.isFinite(options.gap) ? options.gap : readGap(container);
-  var hasUnknownSizes = items.some(function (item) {
-    return !Number.isFinite(item.width) || !Number.isFinite(item.height) || item.width <= 0 || item.height <= 0;
-  });
-
-  if (hasUnknownSizes) {
-    layoutSkeleton(container, items, rowsNumber, gap, containerWidth, options);
-    return;
-  }
-
   var prepared = scaleToHeight(items, ESTIMATE_ROW_HEIGHT);
   var rows = splitIntoRows(prepared, rowsNumber);
 
@@ -393,8 +340,27 @@ class FullframeGallery {
     var images = this.container.querySelectorAll('img');
     var self = this;
     images.forEach(function (img) {
+      var itemEl = img.closest('.gallery-item');
+      if (itemEl && !img.complete) {
+        itemEl.classList.add('gallery-item_loading');
+      }
       if (!img.__ffg_bound) {
-        img.addEventListener('load', self._handleResize, { once: true });
+        img.addEventListener(
+          'load',
+          function () {
+            if (itemEl) {
+              itemEl.classList.remove('gallery-item_loading');
+            }
+            if (!img.dataset.width) {
+              img.dataset.width = String(img.naturalWidth || '');
+            }
+            if (!img.dataset.height) {
+              img.dataset.height = String(img.naturalHeight || '');
+            }
+            self._handleResize();
+          },
+          { once: true },
+        );
         img.__ffg_bound = true;
       }
     });

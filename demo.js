@@ -5,7 +5,7 @@ var state = {
   rows: 3,
   autoRows: true,
   gap: 10,
-  useKnownSizes: true,
+  dataSource: "images.json",
 };
 
 var elements = {};
@@ -13,11 +13,12 @@ var galleryInstance = null;
 
 function cacheElements() {
   elements.gallery = document.querySelector("[data-justified-gallery]");
+  elements.withSizes = document.getElementById("withSizes");
+  elements.withoutSizes = document.getElementById("withoutSizes");
   elements.itemsPerPage = document.getElementById("itemsPerPage");
   elements.rowsInput = document.getElementById("rowsInput");
   elements.autoRows = document.getElementById("autoRows");
   elements.gapInput = document.getElementById("gapInput");
-  elements.knownSizes = document.getElementById("knownSizes");
   elements.prevPage = document.getElementById("prevPage");
   elements.nextPage = document.getElementById("nextPage");
   elements.pageInfo = document.getElementById("pageInfo");
@@ -42,7 +43,7 @@ function createGalleryItem(item) {
   img.alt = item.title || "";
   img.loading = "lazy";
 
-  if (state.useKnownSizes) {
+  if (Number.isFinite(item.width) && Number.isFinite(item.height)) {
     img.dataset.width = item.width;
     img.dataset.height = item.height;
   }
@@ -123,9 +124,20 @@ function bindControls() {
     renderGallery();
   });
 
-  elements.knownSizes.addEventListener("change", function () {
-    state.useKnownSizes = elements.knownSizes.checked;
-    renderGallery();
+  elements.withSizes.addEventListener("click", function () {
+    state.dataSource = "images.json";
+    elements.withSizes.classList.add("demo-button_active");
+    elements.withoutSizes.classList.remove("demo-button_active");
+    state.page = 1;
+    loadData().then(renderGallery);
+  });
+
+  elements.withoutSizes.addEventListener("click", function () {
+    state.dataSource = "images.nosize.json";
+    elements.withoutSizes.classList.add("demo-button_active");
+    elements.withSizes.classList.remove("demo-button_active");
+    state.page = 1;
+    loadData().then(renderGallery);
   });
 
   elements.prevPage.addEventListener("click", function () {
@@ -141,7 +153,7 @@ function bindControls() {
 
 // Загружает JSON как будто это ответ от бэкенда.
 function loadData() {
-  return fetch("images.json")
+  return fetch(state.dataSource)
     .then(function (response) {
       if (!response.ok) {
         throw new Error("Не удалось загрузить JSON");
