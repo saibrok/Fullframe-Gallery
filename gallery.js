@@ -87,11 +87,19 @@ function splitIntoRows(items, rowCount) {
 }
 
 /**
- * Берет размер зазора между элементами из CSS-переменной.
+ * Берет размер зазора между элементами из CSS или стиля строки.
  * @param {Element} container
  * @returns {number}
  */
 function readGap(container) {
+  var row = container.querySelector(".gallery-row");
+  if (row) {
+    var rowGap = parseFloat(getComputedStyle(row).gap);
+    if (Number.isFinite(rowGap)) {
+      return rowGap;
+    }
+  }
+
   var styles = getComputedStyle(container);
   var gapValue = styles.getPropertyValue("--gallery-gap");
   var gap = parseFloat(gapValue);
@@ -99,15 +107,76 @@ function readGap(container) {
 }
 
 /**
+ * Нормализует параметры галереи, заполняет значения по умолчанию.
+ * @param {{
+ *   rows?: number,
+ *   gap?: number,
+ *   fallbackWidth?: number,
+ *   fallbackHeight?: number
+ * }} [options]
+ * @returns {{
+ *   rows: (number|null),
+ *   gap: (number|null),
+ *   fallbackWidth: number,
+ *   fallbackHeight: number
+ * }}
+ */
+function normalizeOptions(options) {
+  var normalized = {
+    rows: null,
+    gap: null,
+    fallbackWidth: 320,
+    fallbackHeight: 240,
+  };
+
+  if (options) {
+    if (Number.isFinite(options.rows)) {
+      normalized.rows = options.rows;
+    }
+    if (Number.isFinite(options.gap)) {
+      normalized.gap = options.gap;
+    }
+    if (Number.isFinite(options.fallbackWidth)) {
+      normalized.fallbackWidth = options.fallbackWidth;
+    }
+    if (Number.isFinite(options.fallbackHeight)) {
+      normalized.fallbackHeight = options.fallbackHeight;
+    }
+  }
+
+  return normalized;
+}
+
+/**
+ * Объединяет текущие опции с новыми.
+ * @param {Object} baseOptions
+ * @param {Object} nextOptions
+ * @returns {Object}
+ */
+function mergeOptions(baseOptions, nextOptions) {
+  var merged = {};
+  Object.keys(baseOptions).forEach(function (key) {
+    merged[key] = baseOptions[key];
+  });
+  if (nextOptions) {
+    Object.keys(nextOptions).forEach(function (key) {
+      merged[key] = nextOptions[key];
+    });
+  }
+  return merged;
+}
+
+/**
  * Собирает данные по изображениям: DOM-элементы и исходные размеры.
  * @param {Element} container
+ * @param {{fallbackWidth: number, fallbackHeight: number}} options
  * @returns {Array<{itemEl: Element, imgEl: HTMLImageElement, width: number, height: number}>}
  */
-function buildItemList(container) {
+function buildItemList(container, options) {
   return Array.prototype.slice.call(container.querySelectorAll(".gallery-item")).map(function (itemEl) {
     var imgEl = itemEl.querySelector("img");
-    var width = parseInt(imgEl.dataset.width, 10) || imgEl.naturalWidth || 1;
-    var height = parseInt(imgEl.dataset.height, 10) || imgEl.naturalHeight || 1;
+    var width = parseInt(imgEl.dataset.width, 10) || imgEl.naturalWidth || options.fallbackWidth || 1;
+    var height = parseInt(imgEl.dataset.height, 10) || imgEl.naturalHeight || options.fallbackHeight || 1;
     return {
       itemEl: itemEl,
       imgEl: imgEl,
@@ -120,16 +189,22 @@ function buildItemList(container) {
 /**
  * Пересчитывает и раскладывает галерею: разбивает на строки и задает размеры.
  * @param {Element} container
+ * @param {{
+ *   rows: (number|null),
+ *   gap: (number|null),
+ *   fallbackWidth: number,
+ *   fallbackHeight: number
+ * }} options
  */
-function layoutGallery(container) {
-  var items = buildItemList(container);
+function layoutGallery(container, options) {
+  var items = buildItemList(container, options);
   var total = items.length;
   if (!total) {
     return;
   }
 
   // Количество строк можно задавать через data-rows, иначе берем авто-значение.
-  var rowsNumber = parseInt(container.dataset.rows, 10);
+  var rowsNumber = Number.isFinite(options.rows) ? options.rows : parseInt(container.dataset.rows, 10);
   if (!Number.isFinite(rowsNumber) || rowsNumber <= 0) {
     rowsNumber = Math.ceil(total / 4);
   }
@@ -140,9 +215,13 @@ function layoutGallery(container) {
   }
 
   // Основной расчет: приводим все изображения к высоте 100px для оценки ширин.
-  var gap = readGap(container);
+  if (Number.isFinite(options.gap)) {
+    container.style.setProperty("--gallery-gap", options.gap + "px");
+  }
+  var gap = Number.isFinite(options.gap) ? options.gap : readGap(container);
   var prepared = scaleToHeight(items, 100);
   var rows = splitIntoRows(prepared, rowsNumber);
+
 
   var fragment = document.createDocumentFragment();
   rows.forEach(function (row) {
@@ -152,17 +231,10 @@ function layoutGallery(container) {
     // Доступная ширина под элементы строки с учетом промежутков.
     var availableWidth = Math.max(containerWidth - gap * (row.length - 1), 1);
     var sizedRow;
-    if (total < 4) {
-      // Для маленьких наборов стараемся держать высоту 350px, но не вылезать за ширину.
-      var preferred = scaleToHeight(row, 350);
-      var preferredWidth = sumWidths(preferred);
-      sizedRow = preferredWidth > availableWidth ? scaleByFactor(preferred, availableWidth / preferredWidth) : preferred;
-    } else {
-      // Для нормальных наборов масштабируем строку так, чтобы занять всю ширину.
-      var rowWidth = sumWidths(row);
-      var scaleFactor = availableWidth / rowWidth;
-      sizedRow = scaleByFactor(row, scaleFactor);
-    }
+    // Масштабируем строку так, чтобы занять всю ширину.
+    var rowWidth = sumWidths(row);
+    var scaleFactor = availableWidth / rowWidth;
+    sizedRow = scaleByFactor(row, scaleFactor);
 
     sizedRow.forEach(function (item) {
       item.itemEl.style.width = item.width + "px";
@@ -179,59 +251,102 @@ function layoutGallery(container) {
 }
 
 /**
- * Подготавливает галерею и подписывает на события загрузки и ресайза.
- * @param {Element} container
+ * Класс галереи с хранимыми опциями и динамическим обновлением.
  */
-function setupGallery(container) {
-  var queued = false;
-  // Троттлинг через rAF, чтобы не пересчитывать слишком часто.
-  function scheduleLayout() {
-    if (queued) {
+class FullframeGallery {
+  /**
+   * @param {string|Element} target
+   * @param {{
+   *   rows?: number,
+   *   gap?: number,
+   *   fallbackWidth?: number,
+   *   fallbackHeight?: number
+   * }} [options]
+   */
+  constructor(target, options) {
+    this.container = typeof target === "string" ? document.querySelector(target) : target;
+    this.options = normalizeOptions(options);
+    this._queued = false;
+    this._resizeBound = false;
+    this._handleResize = this._scheduleLayout.bind(this);
+
+    if (this.container) {
+      this.layout();
+      this._bindResize();
+    }
+  }
+
+  /**
+   * Обновляет опции и пересчитывает галерею.
+   * @param {Object} nextOptions
+   */
+  setOptions(nextOptions) {
+    this.options = normalizeOptions(mergeOptions(this.options, nextOptions));
+    this.layout();
+  }
+
+  /**
+   * Пересчитывает галерею с текущими опциями.
+   */
+  layout() {
+    if (!this.container) {
       return;
     }
-    queued = true;
-    window.requestAnimationFrame(function () {
-      queued = false;
-      layoutGallery(container);
+
+    this._bindImageListeners();
+    layoutGallery(this.container, this.options);
+  }
+
+  /**
+   * Удаляет слушатели ресайза.
+   */
+  destroy() {
+    if (this._resizeBound) {
+      window.removeEventListener("resize", this._handleResize);
+      this._resizeBound = false;
+    }
+  }
+
+  /**
+   * Подписывает на загрузку изображений, чтобы перестраивать раскладку.
+   */
+  _bindImageListeners() {
+    var images = this.container.querySelectorAll("img");
+    var self = this;
+    images.forEach(function (img) {
+      if (!img.__ffg_bound) {
+        img.addEventListener("load", self._handleResize, { once: true });
+        img.__ffg_bound = true;
+      }
     });
   }
 
-  var images = container.querySelectorAll("img");
-  images.forEach(function (img) {
-    if (!img.complete) {
-      img.addEventListener("load", scheduleLayout, { once: true });
+  /**
+   * Привязывает обработчик изменения размеров окна.
+   */
+  _bindResize() {
+    if (!this._resizeBound) {
+      window.addEventListener("resize", this._handleResize);
+      this._resizeBound = true;
     }
-  });
-
-  scheduleLayout();
-  window.addEventListener("resize", scheduleLayout);
-}
-
-/**
- * Инициализация по селектору или DOM-элементу.
- * @param {string|Element} target
- */
-function initJustifiedGallery(target) {
-  var container = target;
-  if (typeof target === "string") {
-    container = document.querySelector(target);
   }
 
-  if (container) {
-    setupGallery(container);
+  /**
+   * Троттлинг через rAF, чтобы не пересчитывать слишком часто.
+   */
+  _scheduleLayout() {
+    var self = this;
+    if (this._queued) {
+      return;
+    }
+    this._queued = true;
+    window.requestAnimationFrame(function () {
+      self._queued = false;
+      self.layout();
+    });
   }
 }
-
-/**
- * Публичное API.
- * @type {{init: Function, setup: Function, layout: Function}}
- */
-var JustifiedGallery = {
-  init: initJustifiedGallery,
-  setup: setupGallery,
-  layout: layoutGallery,
-};
 
 if (typeof window !== "undefined") {
-  window.JustifiedGallery = JustifiedGallery;
+  window.FullframeGallery = FullframeGallery;
 }

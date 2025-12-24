@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1"
     />
-    <title>Justified Gallery</title>
+    <title>Fullframe Gallery</title>
     <link
       rel="stylesheet"
       href="gallery.css"
@@ -15,121 +15,46 @@
   <body>
     <main class="page">
       <header class="page-header">
-        <h1 class="page-title">Justified Gallery</h1>
-        <p class="page-subtitle">Rows scale to fill width using image aspect ratios.</p>
+        <h1 class="page-title">Fullframe Gallery</h1>
+        <p class="page-subtitle">Демо с пагинацией и настройкой количества элементов.</p>
       </header>
 
-      <section
-        class="gallery"
-        data-justified-gallery
-        data-rows="3"
-      >
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1011/900/600"
-            data-width="900"
-            data-height="600"
-            alt="Mountain"
-          />
+      <section class="demo">
+        <div class="demo-controls">
+          <div class="demo-group">
+            <label for="itemsPerPage">Элементов на странице</label>
+            <select id="itemsPerPage">
+              <option value="10">10</option>
+              <option value="15" selected>15</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+          <div class="demo-group">
+            <label for="rowsInput">Количество строк</label>
+            <input id="rowsInput" type="number" min="1" max="10" value="3" />
+          </div>
+          <div class="demo-group">
+            <label for="gapInput">Gap, px</label>
+            <input id="gapInput" type="number" min="0" max="40" value="10" />
+          </div>
+          <div class="demo-group demo-toggle">
+            <input id="knownSizes" type="checkbox" checked />
+            <label for="knownSizes">Известны размеры картинок</label>
+          </div>
         </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1015/800/1200"
-            data-width="800"
-            data-height="1200"
-            alt="River"
-          />
+
+        <div class="demo-pagination">
+          <button id="prevPage" type="button">Назад</button>
+          <span id="pageInfo">Страница 1 из 1</span>
+          <button id="nextPage" type="button">Вперед</button>
         </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1025/1200/800"
-            data-width="1200"
-            data-height="800"
-            alt="Dog"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1035/1400/900"
-            data-width="1400"
-            data-height="900"
-            alt="Forest"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1042/1100/700"
-            data-width="1100"
-            data-height="700"
-            alt="Coast"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1050/1000/1400"
-            data-width="1000"
-            data-height="1400"
-            alt="Bridge"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1062/1400/933"
-            data-width="1400"
-            data-height="933"
-            alt="Hills"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1069/900/1200"
-            data-width="900"
-            data-height="1200"
-            alt="City"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1074/1200/900"
-            data-width="1200"
-            data-height="900"
-            alt="Sea"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1080/1500/900"
-            data-width="1500"
-            data-height="900"
-            alt="Road"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1084/1100/800"
-            data-width="1100"
-            data-height="800"
-            alt="Field"
-          />
-        </div>
-        <div class="gallery-item">
-          <img
-            src="https://picsum.photos/id/1042/700/200"
-            data-width="700"
-            data-height="200"
-            alt="Trees"
-          />
-        </div>
+
+        <section class="gallery" data-justified-gallery data-rows="3"></section>
       </section>
     </main>
 
     <script src="gallery.js"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        if (window.JustifiedGallery) {
-          window.JustifiedGallery.init('[data-justified-gallery]');
-        }
-      });
-    </script>
+    <script src="demo.js"></script>
   </body>
 </html>
