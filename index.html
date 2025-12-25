@@ -21,44 +21,106 @@
 
       <section class="demo">
         <div class="demo-controls">
+          <div class="demo-section-title">demo settings</div>
           <div class="demo-group">
-            <label for="itemsPerPage">Элементов на странице</label>
-            <select id="itemsPerPage">
-              <option value="10">10</option>
-              <option value="15" selected>15</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
+            <label for="itemsToRender">itemsToRender</label>
+            <input
+              id="itemsToRender"
+              type="number"
+              min="0"
+              value="10"
+            />
+          </div>
+          <div class="demo-group demo-toggle">
+            <input id="passSizes" type="checkbox" checked />
+            <label for="passSizes">передать размеры</label>
+          </div>
+          <div class="demo-pagination">
+            <button
+              id="prevPage"
+              type="button"
+            >
+              Назад
+            </button>
+            <span id="pageInfo">Страница 1 из 1</span>
+            <button
+              id="nextPage"
+              type="button"
+            >
+              Вперед
+            </button>
+          </div>
+          <div class="demo-group demo-total">
+            <span id="totalCount">Всего: 0</span>
+          </div>
+        </div>
+        <div class="demo-controls">
+          <div class="demo-section-title">gallery options</div>
+          <div class="demo-group">
+            <label for="itemsPerPage">itemsPerPage</label>
+            <input
+              id="itemsPerPage"
+              type="number"
+              min="0"
+              value="15"
+            />
+          </div>
+
+          <div class="demo-group">
+            <label for="rowsInput">rows</label>
+            <input
+              id="rowsInput"
+              type="number"
+              min="1"
+              max="10"
+              value="3"
+            />
+          </div>
+          <div class="demo-group demo-toggle">
+            <input
+              id="autoRows"
+              type="checkbox"
+              checked
+            />
+            <label for="autoRows">autoRows</label>
+          </div>
+          <div class="demo-group">
+            <label for="gapInput">gap</label>
+            <input
+              id="gapInput"
+              type="number"
+              min="0"
+              max="40"
+              value="10"
+            />
+          </div>
+          <div class="demo-group">
+            <label for="skeletonRatio">skeletonRatio</label>
+            <select id="skeletonRatio">
+              <option
+                value="0.75"
+                selected
+              >
+                3 / 4
+              </option>
+              <option value="1.3333333333">4 / 3</option>
+              <option value="1.5">3 / 2</option>
+              <option value="1.7777777778">16 / 9</option>
             </select>
           </div>
-          <div class="demo-group">
-            <label for="rowsInput">Количество строк</label>
-            <input id="rowsInput" type="number" min="1" max="10" value="3" />
-          </div>
-          <div class="demo-group demo-toggle">
-            <input id="autoRows" type="checkbox" checked />
-            <label for="autoRows">Авто-строки по количеству</label>
-          </div>
-          <div class="demo-group">
-            <label for="gapInput">Gap, px</label>
-            <input id="gapInput" type="number" min="0" max="40" value="10" />
-          </div>
-          <div class="demo-group demo-toggle">
-            <button id="withSizes" type="button" class="demo-button demo-button_active">С размерами</button>
-            <button id="withoutSizes" type="button" class="demo-button">Без размеров</button>
-          </div>
         </div>
 
-        <div class="demo-pagination">
-          <button id="prevPage" type="button">Назад</button>
-          <span id="pageInfo">Страница 1 из 1</span>
-          <button id="nextPage" type="button">Вперед</button>
-        </div>
-
-        <section class="gallery" data-justified-gallery data-rows="3"></section>
+        <section
+          class="gallery"
+          data-justified-gallery
+          data-rows="3"
+        ></section>
       </section>
     </main>
 
-    <script src="gallery.js"></script>
-    <script src="demo.js"></script>
+    <script
+      type="module"
+      src="demo.js"
+    ></script>
   </body>
 </html>

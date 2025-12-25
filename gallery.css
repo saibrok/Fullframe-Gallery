@@ -58,6 +58,13 @@ body {
   box-shadow: 0 8px 18px var(--shadow);
 }
 
+.demo-section-title {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  color: var(--muted);
+}
+
 .demo-group {
   display: flex;
   flex-direction: column;
@@ -85,26 +92,17 @@ body {
   gap: 10px;
 }
 
-.demo-button {
-  border: 1px solid #d9d2c6;
-  background: #fff;
-  color: #1a1a1a;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.demo-button_active {
-  background: #1a1a1a;
-  color: #fff;
-  border-color: #1a1a1a;
-}
 
 .demo-pagination {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.demo-total {
+  align-self: center;
+  color: var(--muted);
+  font-size: 14px;
 }
 
 .demo-pagination button {

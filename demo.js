@@ -1,151 +1,158 @@
-var state = {
+import FullframeGallery from './gallery.js';
+
+const state = {
   items: [],
   page: 1,
-  perPage: 15,
+  itemsPerPage: 15,
   rows: 3,
   autoRows: true,
   gap: 10,
-  dataSource: "images.json",
+  skeletonRatio: 3 / 4,
+  itemsToRender: 10,
+  dataSource: 'images.json',
+  stripSizes: false,
 };
 
-var elements = {};
-var galleryInstance = null;
+const elements = {};
+let galleryInstance = null;
 
 function cacheElements() {
-  elements.gallery = document.querySelector("[data-justified-gallery]");
-  elements.withSizes = document.getElementById("withSizes");
-  elements.withoutSizes = document.getElementById("withoutSizes");
-  elements.itemsPerPage = document.getElementById("itemsPerPage");
-  elements.rowsInput = document.getElementById("rowsInput");
-  elements.autoRows = document.getElementById("autoRows");
-  elements.gapInput = document.getElementById("gapInput");
-  elements.prevPage = document.getElementById("prevPage");
-  elements.nextPage = document.getElementById("nextPage");
-  elements.pageInfo = document.getElementById("pageInfo");
+  elements.gallery = document.querySelector('[data-justified-gallery]');
+  elements.passSizes = document.getElementById('passSizes');
+  elements.itemsPerPage = document.getElementById('itemsPerPage');
+  elements.itemsToRender = document.getElementById('itemsToRender');
+  elements.rowsInput = document.getElementById('rowsInput');
+  elements.autoRows = document.getElementById('autoRows');
+  elements.gapInput = document.getElementById('gapInput');
+  elements.skeletonRatio = document.getElementById('skeletonRatio');
+  elements.prevPage = document.getElementById('prevPage');
+  elements.nextPage = document.getElementById('nextPage');
+  elements.pageInfo = document.getElementById('pageInfo');
+  elements.totalCount = document.getElementById('totalCount');
 }
 
 function totalPages() {
-  return Math.max(1, Math.ceil(state.items.length / state.perPage));
+  if (!state.itemsToRender) {
+    return 1;
+  }
+  return Math.max(1, Math.ceil(state.items.length / state.itemsToRender));
 }
 
 function currentPageItems() {
-  var start = (state.page - 1) * state.perPage;
-  return state.items.slice(start, start + state.perPage);
+  if (!state.itemsToRender) {
+    return applySizeMode(state.items.slice());
+  }
+  let start = (state.page - 1) * state.itemsToRender;
+  return applySizeMode(state.items.slice(start, start + state.itemsToRender));
 }
 
-// Создает HTML для одного элемента галереи.
-function createGalleryItem(item) {
-  var wrapper = document.createElement("div");
-  wrapper.className = "gallery-item";
-
-  var img = document.createElement("img");
-  img.src = item.url;
-  img.alt = item.title || "";
-  img.loading = "lazy";
-
-  if (Number.isFinite(item.width) && Number.isFinite(item.height)) {
-    img.dataset.width = item.width;
-    img.dataset.height = item.height;
+function applySizeMode(items) {
+  if (!state.stripSizes) {
+    return items;
   }
-
-  wrapper.appendChild(img);
-  return wrapper;
+  return items.map(function (item) {
+    let copy = Object.assign({}, item);
+    delete copy.width;
+    delete copy.height;
+    return copy;
+  });
 }
 
 // Перерисовывает галерею и запускает раскладку.
 function renderGallery() {
-  var gallery = elements.gallery;
+  let gallery = elements.gallery;
   if (!gallery) {
     return;
   }
 
-  var pages = totalPages();
+  let pages = totalPages();
   if (state.page > pages) {
     state.page = pages;
   }
 
-  gallery.dataset.rows = String(state.rows);
-  gallery.innerHTML = "";
+  let pageItems = currentPageItems();
 
-  currentPageItems().forEach(function (item) {
-    gallery.appendChild(createGalleryItem(item));
-  });
-
-  if (window.FullframeGallery) {
-    if (!galleryInstance) {
-      galleryInstance = new window.FullframeGallery(gallery, {
-        rows: state.rows,
-        autoRows: state.autoRows,
-        pageSize: state.perPage,
-        gap: state.gap,
-      });
-    } else {
-      galleryInstance.setOptions({
-        rows: state.rows,
-        autoRows: state.autoRows,
-        pageSize: state.perPage,
-        gap: state.gap,
-      });
-    }
+  if (!galleryInstance) {
+    galleryInstance = new FullframeGallery(gallery, pageItems, {
+      rows: state.rows,
+      autoRows: state.autoRows,
+      itemsPerPage: state.itemsPerPage,
+      gap: state.gap,
+      skeletonRatio: state.skeletonRatio,
+    });
+  } else {
+    galleryInstance.setItems(pageItems);
+    galleryInstance.setOptions({
+      rows: state.rows,
+      autoRows: state.autoRows,
+      itemsPerPage: state.itemsPerPage,
+      gap: state.gap,
+      skeletonRatio: state.skeletonRatio,
+    });
   }
 
   updatePagination();
 }
 
 function updatePagination() {
-  var pages = totalPages();
-  elements.pageInfo.textContent = "Страница " + state.page + " из " + pages;
+  let pages = totalPages();
+  elements.pageInfo.textContent = 'Страница ' + state.page + ' из ' + pages;
   elements.prevPage.disabled = state.page <= 1;
   elements.nextPage.disabled = state.page >= pages;
+  elements.totalCount.textContent = 'Всего: ' + state.items.length;
 }
 
 // Обрабатывает изменения контролов.
 function bindControls() {
-  elements.itemsPerPage.addEventListener("change", function () {
-    state.perPage = parseInt(elements.itemsPerPage.value, 10);
+  elements.itemsPerPage.addEventListener('input', function () {
+    let value = parseInt(elements.itemsPerPage.value, 10);
+    state.itemsPerPage = Number.isFinite(value) && value >= 0 ? value : 15;
     state.page = 1;
     renderGallery();
   });
 
-  elements.rowsInput.addEventListener("input", function () {
-    var value = parseInt(elements.rowsInput.value, 10);
+  elements.itemsToRender.addEventListener('input', function () {
+    let value = parseInt(elements.itemsToRender.value, 10);
+    state.itemsToRender = Number.isFinite(value) && value > 0 ? value : 0;
+    state.page = 1;
+    renderGallery();
+  });
+
+  elements.rowsInput.addEventListener('input', function () {
+    let value = parseInt(elements.rowsInput.value, 10);
     state.rows = Number.isFinite(value) && value > 0 ? value : 3;
     renderGallery();
   });
 
-  elements.autoRows.addEventListener("change", function () {
+  elements.autoRows.addEventListener('change', function () {
     state.autoRows = elements.autoRows.checked;
     renderGallery();
   });
 
-  elements.gapInput.addEventListener("input", function () {
-    var value = parseInt(elements.gapInput.value, 10);
+  elements.gapInput.addEventListener('input', function () {
+    let value = parseInt(elements.gapInput.value, 10);
     state.gap = Number.isFinite(value) && value >= 0 ? value : 10;
     renderGallery();
   });
 
-  elements.withSizes.addEventListener("click", function () {
-    state.dataSource = "images.json";
-    elements.withSizes.classList.add("demo-button_active");
-    elements.withoutSizes.classList.remove("demo-button_active");
-    state.page = 1;
-    loadData().then(renderGallery);
+  elements.skeletonRatio.addEventListener('change', function () {
+    let value = parseFloat(elements.skeletonRatio.value);
+    state.skeletonRatio = Number.isFinite(value) && value > 0 ? value : 3 / 4;
+    renderGallery();
   });
 
-  elements.withoutSizes.addEventListener("click", function () {
-    state.dataSource = "images.nosize.json";
-    elements.withoutSizes.classList.add("demo-button_active");
-    elements.withSizes.classList.remove("demo-button_active");
+  elements.passSizes.addEventListener('change', function () {
+    state.stripSizes = !elements.passSizes.checked;
     state.page = 1;
-    loadData().then(renderGallery);
+    renderGallery();
   });
 
-  elements.prevPage.addEventListener("click", function () {
+  elements.prevPage.addEventListener('click', function () {
     state.page = Math.max(1, state.page - 1);
     renderGallery();
   });
 
-  elements.nextPage.addEventListener("click", function () {
+  elements.nextPage.addEventListener('click', function () {
     state.page = Math.min(totalPages(), state.page + 1);
     renderGallery();
   });
@@ -156,7 +163,7 @@ function loadData() {
   return fetch(state.dataSource)
     .then(function (response) {
       if (!response.ok) {
-        throw new Error("Не удалось загрузить JSON");
+        throw new Error('Не удалось загрузить JSON');
       }
       return response.json();
     })
@@ -165,7 +172,7 @@ function loadData() {
     });
 }
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   cacheElements();
   bindControls();
 
@@ -174,6 +181,6 @@ document.addEventListener("DOMContentLoaded", function () {
       renderGallery();
     })
     .catch(function () {
-      elements.pageInfo.textContent = "Не удалось загрузить данные";
+      elements.pageInfo.textContent = 'Не удалось загрузить данные';
     });
 });

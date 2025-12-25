@@ -5,19 +5,17 @@
  * @returns {Array<{itemEl: Element, imgEl: HTMLImageElement, width: number, height: number}>}
  */
 // Базовые значения для расчета раскладки.
-var DEFAULT_GAP_PX = 10;
+const DEFAULT_GAP_PX = 10;
 // Высота для оценки пропорций (не финальная высота строк).
-var ESTIMATE_ROW_HEIGHT = 100;
+const ESTIMATE_ROW_HEIGHT = 100;
 // Делитель для авто-расчета числа строк.
-var AUTO_ROWS_DIVISOR = 4;
+const AUTO_ROWS_DIVISOR = 4;
 // Минимально допустимая ширина для расчета, чтобы избежать деления на 0.
-var MIN_AVAILABLE_WIDTH_PX = 1;
-// Соотношение сторон скелетона по умолчанию (4:3).
-var DEFAULT_SKELETON_RATIO = 4 / 3;
+const MIN_AVAILABLE_WIDTH_PX = 1;
 
 function scaleToHeight(items, height) {
   return items.map(function (item) {
-    var width = (height / item.height) * item.width;
+    const width = (height / item.height) * item.width;
     return {
       itemEl: item.itemEl,
       imgEl: item.imgEl,
@@ -63,18 +61,18 @@ function scaleByFactor(items, factor) {
  * @returns {Array<Array<{itemEl: Element, imgEl: HTMLImageElement, width: number, height: number}>>}
  */
 function splitIntoRows(items, rowCount) {
-  var totalWidth = sumWidths(items);
-  var rows = [];
-  var runningWidth = 0;
-  var rowIndex = 0;
-  var prevWidth = 0;
+  let totalWidth = sumWidths(items);
+  let rows = [];
+  let runningWidth = 0;
+  let rowIndex = 0;
+  let prevWidth = 0;
 
   items.forEach(function (item) {
     runningWidth += item.width;
-    var target = (rowIndex + 1) * (totalWidth / rowCount);
-    var between = prevWidth <= target && target <= runningWidth;
-    var leftGap = target - prevWidth;
-    var rightGap = runningWidth - target;
+    let target = (rowIndex + 1) * (totalWidth / rowCount);
+    let between = prevWidth <= target && target <= runningWidth;
+    let leftGap = target - prevWidth;
+    let rightGap = runningWidth - target;
 
     if (between && leftGap <= rightGap) {
       rowIndex += 1;
@@ -103,17 +101,17 @@ function splitIntoRows(items, rowCount) {
  * @returns {number}
  */
 function readGap(container) {
-  var row = container.querySelector('.gallery-row');
+  let row = container.querySelector('.gallery-row');
   if (row) {
-    var rowGap = parseFloat(getComputedStyle(row).gap);
+    let rowGap = parseFloat(getComputedStyle(row).gap);
     if (Number.isFinite(rowGap)) {
       return rowGap;
     }
   }
 
-  var styles = getComputedStyle(container);
-  var gapValue = styles.getPropertyValue('--gallery-gap');
-  var gap = parseFloat(gapValue);
+  let styles = getComputedStyle(container);
+  let gapValue = styles.getPropertyValue('--gallery-gap');
+  let gap = parseFloat(gapValue);
   return Number.isFinite(gap) ? gap : DEFAULT_GAP_PX;
 }
 
@@ -122,24 +120,24 @@ function readGap(container) {
  * @param {{
  *   rows?: number,
  *   autoRows?: boolean,
- *   pageSize?: number,
+ *   itemsPerPage?: number,
  *   skeletonRatio?: number,
  *   gap?: number,
  * }} [options]
  * @returns {{
  *   rows: (number|null),
  *   autoRows: boolean,
- *   pageSize: (number|null),
+ *   itemsPerPage: (number|null),
  *   skeletonRatio: number,
  *   gap: (number|null),
  * }}
  */
 function normalizeOptions(options) {
-  var normalized = {
+  let normalized = {
     rows: null,
     autoRows: false,
-    pageSize: null,
-    skeletonRatio: DEFAULT_SKELETON_RATIO,
+    itemsPerPage: null,
+    skeletonRatio: 4 / 3,
     gap: null,
   };
 
@@ -150,8 +148,8 @@ function normalizeOptions(options) {
     if (typeof options.autoRows === 'boolean') {
       normalized.autoRows = options.autoRows;
     }
-    if (Number.isFinite(options.pageSize)) {
-      normalized.pageSize = options.pageSize;
+    if (Number.isFinite(options.itemsPerPage) && options.itemsPerPage > 0) {
+      normalized.itemsPerPage = options.itemsPerPage;
     }
     if (Number.isFinite(options.skeletonRatio) && options.skeletonRatio > 0) {
       normalized.skeletonRatio = options.skeletonRatio;
@@ -159,6 +157,10 @@ function normalizeOptions(options) {
     if (Number.isFinite(options.gap)) {
       normalized.gap = options.gap;
     }
+  }
+
+  if (!normalized.itemsPerPage) {
+    normalized.autoRows = false;
   }
 
   return normalized;
@@ -171,7 +173,7 @@ function normalizeOptions(options) {
  * @returns {Object}
  */
 function mergeOptions(baseOptions, nextOptions) {
-  var merged = {};
+  let merged = {};
   Object.keys(baseOptions).forEach(function (key) {
     merged[key] = baseOptions[key];
   });
@@ -191,9 +193,9 @@ function mergeOptions(baseOptions, nextOptions) {
  */
 function buildItemList(container, options) {
   return Array.prototype.slice.call(container.querySelectorAll('.gallery-item')).map(function (itemEl) {
-    var imgEl = itemEl.querySelector('img');
-    var width = parseInt(imgEl.dataset.width, 10) || imgEl.naturalWidth;
-    var height = parseInt(imgEl.dataset.height, 10) || imgEl.naturalHeight;
+    let imgEl = itemEl.querySelector('img');
+    let width = parseInt(imgEl.dataset.width, 10) || imgEl.naturalWidth;
+    let height = parseInt(imgEl.dataset.height, 10) || imgEl.naturalHeight;
     if (!Number.isFinite(width) || width <= 0) {
       width = ESTIMATE_ROW_HEIGHT * options.skeletonRatio;
     }
@@ -209,56 +211,54 @@ function buildItemList(container, options) {
   });
 }
 
-
 /**
  * Пересчитывает и раскладывает галерею: разбивает на строки и задает размеры.
  * @param {Element} container
  * @param {{
  *   rows: (number|null),
  *   autoRows: boolean,
- *   pageSize: (number|null),
+ *   itemsPerPage: (number|null),
  *   skeletonRatio: number,
  *   gap: (number|null),
  * }} options
  */
 function layoutGallery(container, options) {
-  var items = buildItemList(container, options);
-  var total = items.length;
+  let items = buildItemList(container, options);
+  let total = items.length;
   if (!total) {
     return;
   }
 
-  // Количество строк можно задавать через data-rows, иначе берем авто-значение.
-  var rowsNumber = Number.isFinite(options.rows) ? options.rows : parseInt(container.dataset.rows, 10);
-  if (options.autoRows && Number.isFinite(options.pageSize) && Number.isFinite(rowsNumber) && rowsNumber > 0) {
-    var itemsPerRow = Math.ceil(options.pageSize / rowsNumber);
+  let rowsNumber = Number.isFinite(options.rows) ? options.rows : null;
+  if (options.autoRows && Number.isFinite(options.itemsPerPage) && Number.isFinite(rowsNumber) && rowsNumber > 0) {
+    let itemsPerRow = Math.ceil(options.itemsPerPage / rowsNumber);
     rowsNumber = Math.max(1, Math.ceil(total / itemsPerRow));
   }
   if (!Number.isFinite(rowsNumber) || rowsNumber <= 0) {
     rowsNumber = Math.ceil(total / AUTO_ROWS_DIVISOR);
   }
 
-  var containerWidth = container.clientWidth;
+  let containerWidth = container.clientWidth;
 
   // Основной расчет: приводим все изображения к высоте 100px для оценки ширин.
   if (Number.isFinite(options.gap)) {
     container.style.setProperty('--gallery-gap', options.gap + 'px');
   }
-  var gap = Number.isFinite(options.gap) ? options.gap : readGap(container);
-  var prepared = scaleToHeight(items, ESTIMATE_ROW_HEIGHT);
-  var rows = splitIntoRows(prepared, rowsNumber);
+  let gap = Number.isFinite(options.gap) ? options.gap : readGap(container);
+  let prepared = scaleToHeight(items, ESTIMATE_ROW_HEIGHT);
+  let rows = splitIntoRows(prepared, rowsNumber);
 
-  var fragment = document.createDocumentFragment();
+  let fragment = document.createDocumentFragment();
   rows.forEach(function (row) {
-    var rowEl = document.createElement('div');
+    let rowEl = document.createElement('div');
     rowEl.className = 'gallery-row';
 
     // Доступная ширина под элементы строки с учетом промежутков.
-    var availableWidth = Math.max(containerWidth - gap * (row.length - 1), MIN_AVAILABLE_WIDTH_PX);
-    var sizedRow;
+    let availableWidth = Math.max(containerWidth - gap * (row.length - 1), MIN_AVAILABLE_WIDTH_PX);
+    let sizedRow;
     // Масштабируем строку так, чтобы занять всю ширину.
-    var rowWidth = sumWidths(row);
-    var scaleFactor = availableWidth / rowWidth;
+    let rowWidth = sumWidths(row);
+    let scaleFactor = availableWidth / rowWidth;
     sizedRow = scaleByFactor(row, scaleFactor);
 
     sizedRow.forEach(function (item) {
@@ -280,23 +280,26 @@ function layoutGallery(container, options) {
  */
 class FullframeGallery {
   /**
-   * @param {string|Element} target
+   * @param {Element} container
+   * @param {Array<{id: (string|number), src: string, width?: number, height?: number, title?: string, alt?: string}>} items
    * @param {{
    *   rows?: number,
    *   autoRows?: boolean,
-   *   pageSize?: number,
+   *   itemsPerPage?: number,
    *   skeletonRatio?: number,
    *   gap?: number,
    * }} [options]
    */
-  constructor(target, options) {
-    this.container = typeof target === 'string' ? document.querySelector(target) : target;
+  constructor(container, items, options) {
+    this.container = container;
+    this.items = Array.isArray(items) ? items : [];
     this.options = normalizeOptions(options);
     this._queued = false;
     this._resizeBound = false;
     this._handleResize = this._scheduleLayout.bind(this);
 
     if (this.container) {
+      this._renderItems();
       this.layout();
       this._bindResize();
     }
@@ -308,6 +311,17 @@ class FullframeGallery {
    */
   setOptions(nextOptions) {
     this.options = normalizeOptions(mergeOptions(this.options, nextOptions));
+    this._renderItems();
+    this.layout();
+  }
+
+  /**
+   * Обновляет список изображений и пересчитывает галерею.
+   * @param {Array<{id: (string|number), src: string, width?: number, height?: number, title?: string, alt?: string}>} items
+   */
+  setItems(items) {
+    this.items = Array.isArray(items) ? items : [];
+    this._renderItems();
     this.layout();
   }
 
@@ -337,10 +351,10 @@ class FullframeGallery {
    * Подписывает на загрузку изображений, чтобы перестраивать раскладку.
    */
   _bindImageListeners() {
-    var images = this.container.querySelectorAll('img');
-    var self = this;
+    let images = this.container.querySelectorAll('img');
+    let self = this;
     images.forEach(function (img) {
-      var itemEl = img.closest('.gallery-item');
+      let itemEl = img.closest('.gallery-item');
       if (itemEl && !img.complete) {
         itemEl.classList.add('gallery-item_loading');
       }
@@ -367,6 +381,56 @@ class FullframeGallery {
   }
 
   /**
+   * Рендерит DOM-структуру галереи из массива элементов.
+   */
+  _renderItems() {
+    if (!this.container) {
+      return;
+    }
+
+    if (!this.container.classList.contains('gallery')) {
+      this.container.classList.add('gallery');
+    }
+
+    let fragment = document.createDocumentFragment();
+    let visibleItems = this._getVisibleItems();
+    visibleItems.forEach(function (item) {
+      let wrapper = document.createElement('div');
+      wrapper.className = 'gallery-item';
+      wrapper.dataset.id = String(item.id);
+
+      let img = document.createElement('img');
+      img.src = item.src;
+      img.alt = item.alt || item.title || '';
+      img.loading = 'lazy';
+
+      if (Number.isFinite(item.width) && Number.isFinite(item.height)) {
+        img.dataset.width = String(item.width);
+        img.dataset.height = String(item.height);
+      } else {
+        wrapper.classList.add('gallery-item_loading');
+      }
+
+      wrapper.appendChild(img);
+      fragment.appendChild(wrapper);
+    });
+
+    this.container.innerHTML = '';
+    this.container.appendChild(fragment);
+  }
+
+  /**
+   * Возвращает список элементов, учитывая itemsPerPage.
+   * @returns {Array<{id: (string|number), src: string, width?: number, height?: number, title?: string, alt?: string}>}
+   */
+  _getVisibleItems() {
+    if (this.options.itemsPerPage) {
+      return this.items.slice(0, this.options.itemsPerPage);
+    }
+    return this.items.slice();
+  }
+
+  /**
    * Привязывает обработчик изменения размеров окна.
    */
   _bindResize() {
@@ -380,7 +444,7 @@ class FullframeGallery {
    * Троттлинг через rAF, чтобы не пересчитывать слишком часто.
    */
   _scheduleLayout() {
-    var self = this;
+    let self = this;
     if (this._queued) {
       return;
     }
@@ -392,6 +456,4 @@ class FullframeGallery {
   }
 }
 
-if (typeof window !== 'undefined') {
-  window.FullframeGallery = FullframeGallery;
-}
+export default FullframeGallery;
