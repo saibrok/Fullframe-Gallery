@@ -107,6 +107,11 @@ function bindControls() {
   elements.itemsPerPage.addEventListener('input', function () {
     let value = parseInt(elements.itemsPerPage.value, 10);
     state.itemsPerPage = Number.isFinite(value) && value >= 0 ? value : 15;
+    elements.autoRows.disabled = !state.itemsPerPage;
+    if (!state.itemsPerPage) {
+      state.autoRows = false;
+      elements.autoRows.checked = false;
+    }
     state.page = 1;
     renderGallery();
   });
@@ -175,6 +180,12 @@ function loadData() {
 document.addEventListener('DOMContentLoaded', function () {
   cacheElements();
   bindControls();
+
+  elements.autoRows.disabled = !state.itemsPerPage;
+  if (!state.itemsPerPage) {
+    state.autoRows = false;
+    elements.autoRows.checked = false;
+  }
 
   loadData()
     .then(function () {

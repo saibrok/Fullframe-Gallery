@@ -1,10 +1,13 @@
 :root {
-  color-scheme: light;
-  --page-bg: #f6f3ed;
-  --text: #1a1a1a;
-  --muted: #5b5b5b;
-  --card: #ffffff;
-  --shadow: rgba(0, 0, 0, 0.08);
+  color-scheme: dark;
+  --page-bg: #0f1014;
+  --text: #f4f1ea;
+  --muted: #b1a89b;
+  --card: #1b1c22;
+  --shadow: rgba(0, 0, 0, 0.5);
+  --panel: rgba(26, 27, 34, 0.85);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --accent: #d7b56d;
   --gallery-gap: 10px;
 }
 
@@ -14,8 +17,8 @@
 
 body {
   margin: 0;
-  font-family: sans-serif;
-  background: radial-gradient(circle at top, #fff6e5 0%, var(--page-bg) 55%, #efe7db 100%);
+  font-family: "Space Grotesk", "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(circle at top, #2a2218 0%, var(--page-bg) 55%, #0b0c10 100%);
   color: var(--text);
   min-height: 100vh;
 }
@@ -54,8 +57,10 @@ body {
   gap: 16px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.8);
-  box-shadow: 0 8px 18px var(--shadow);
+  background: var(--panel);
+  box-shadow: 0 12px 28px var(--shadow);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: blur(6px);
 }
 
 .demo-section-title {
@@ -78,11 +83,12 @@ body {
 
 .demo-group select,
 .demo-group input[type="number"] {
-  border: 1px solid #d9d2c6;
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 8px 10px;
   font-size: 14px;
-  background: #fff;
+  background: #111219;
+  color: var(--text);
   min-width: 120px;
 }
 
@@ -107,8 +113,8 @@ body {
 
 .demo-pagination button {
   border: none;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--accent);
+  color: #151318;
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 14px;
@@ -135,7 +141,7 @@ body {
   background: var(--card);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 20px var(--shadow);
+  box-shadow: 0 12px 28px var(--shadow);
 }
 
 .gallery-item_loading {
@@ -146,7 +152,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, #efe7db 0%, #f7f2e8 45%, #efe7db 100%);
+  background: linear-gradient(110deg, #1a1b22 0%, #2a2b34 45%, #1a1b22 100%);
   background-size: 200% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
   z-index: 1;
