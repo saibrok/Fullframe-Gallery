@@ -123,6 +123,7 @@ function readGap(container) {
  *   itemsPerPage?: number,
  *   skeletonRatio?: number,
  *   gap?: number,
+ *   fullscreen?: boolean,
  * }} [options]
  * @returns {{
  *   rows: (number|null),
@@ -130,6 +131,7 @@ function readGap(container) {
  *   itemsPerPage: (number|null),
  *   skeletonRatio: number,
  *   gap: (number|null),
+ *   fullscreen: boolean,
  * }}
  */
 function normalizeOptions(options) {
@@ -139,6 +141,7 @@ function normalizeOptions(options) {
     itemsPerPage: null,
     skeletonRatio: 4 / 3,
     gap: null,
+    fullscreen: false,
   };
 
   if (options) {
@@ -156,6 +159,9 @@ function normalizeOptions(options) {
     }
     if (Number.isFinite(options.gap)) {
       normalized.gap = options.gap;
+    }
+    if (typeof options.fullscreen === 'boolean') {
+      normalized.fullscreen = options.fullscreen;
     }
   }
 
@@ -288,6 +294,7 @@ class FullframeGallery {
    *   itemsPerPage?: number,
    *   skeletonRatio?: number,
    *   gap?: number,
+   *   fullscreen?: boolean,
    * }} [options]
    */
   constructor(container, items, options) {
@@ -297,11 +304,15 @@ class FullframeGallery {
     this._queued = false;
     this._resizeBound = false;
     this._handleResize = this._scheduleLayout.bind(this);
+    this._handleGalleryClick = this._handleGalleryClick.bind(this);
+    this._handleOverlayClick = this._handleOverlayClick.bind(this);
+    this._handleKeydown = this._handleKeydown.bind(this);
 
     if (this.container) {
       this._renderItems();
       this.layout();
       this._bindResize();
+      this._bindFullscreen();
     }
   }
 
@@ -313,6 +324,7 @@ class FullframeGallery {
     this.options = normalizeOptions(mergeOptions(this.options, nextOptions));
     this._renderItems();
     this.layout();
+    this._bindFullscreen();
   }
 
   /**
@@ -344,6 +356,16 @@ class FullframeGallery {
     if (this._resizeBound) {
       window.removeEventListener('resize', this._handleResize);
       this._resizeBound = false;
+    }
+    if (this._fullscreenBound) {
+      this.container.removeEventListener('click', this._handleGalleryClick);
+      document.removeEventListener('keydown', this._handleKeydown);
+      if (this._overlay) {
+        this._overlay.removeEventListener('click', this._handleOverlayClick);
+        this._overlay.remove();
+        this._overlay = null;
+      }
+      this._fullscreenBound = false;
     }
   }
 
@@ -378,6 +400,130 @@ class FullframeGallery {
         img.__ffg_bound = true;
       }
     });
+  }
+
+  /**
+   * Подключает обработчики для полноэкранного просмотра.
+   */
+  _bindFullscreen() {
+    if (!this.container || this._fullscreenBound) {
+      return;
+    }
+    this.container.addEventListener('click', this._handleGalleryClick);
+    document.addEventListener('keydown', this._handleKeydown);
+    this._fullscreenBound = true;
+  }
+
+  _handleGalleryClick(event) {
+    if (!this.options.fullscreen) {
+      return;
+    }
+    let item = event.target.closest('.gallery-item');
+    if (!item) {
+      return;
+    }
+    let img = item.querySelector('img');
+    if (!img) {
+      return;
+    }
+    this._openFullscreen(img);
+  }
+
+  _handleOverlayClick(event) {
+    if (event.target === this._overlay) {
+      this._closeFullscreen();
+    }
+  }
+
+  _handleKeydown(event) {
+    if (event.key === 'Escape') {
+      this._closeFullscreen();
+    }
+  }
+
+  _openFullscreen(img) {
+    if (!img) {
+      return;
+    }
+    if (!this._overlay) {
+      this._overlay = document.createElement('div');
+      this._overlay.className = 'fullframe-overlay';
+      this._overlayImage = document.createElement('img');
+      this._overlayImage.className = 'fullframe-overlay__image';
+      this._overlay.appendChild(this._overlayImage);
+      this._overlay.addEventListener('click', this._handleOverlayClick);
+      document.body.appendChild(this._overlay);
+    }
+
+    this._overlayImage.src = img.src;
+    this._overlayImage.alt = img.alt || '';
+
+    const startRect = img.getBoundingClientRect();
+    const targetRect = this._getFullscreenRect(img);
+    this._fullscreenRect = startRect;
+
+    this._overlay.classList.add('fullframe-overlay_open');
+    this._overlayImage.style.transition = 'none';
+    this._overlayImage.style.top = startRect.top + 'px';
+    this._overlayImage.style.left = startRect.left + 'px';
+    this._overlayImage.style.width = startRect.width + 'px';
+    this._overlayImage.style.height = startRect.height + 'px';
+
+    void this._overlayImage.offsetHeight;
+    this._overlayImage.style.transition = '';
+
+    requestAnimationFrame(() => {
+      this._overlayImage.style.top = targetRect.top + 'px';
+      this._overlayImage.style.left = targetRect.left + 'px';
+      this._overlayImage.style.width = targetRect.width + 'px';
+      this._overlayImage.style.height = targetRect.height + 'px';
+    });
+  }
+
+  _closeFullscreen() {
+    if (this._overlay) {
+      const endRect = this._fullscreenRect;
+      if (!endRect) {
+        this._overlay.classList.remove('fullframe-overlay_open');
+        return;
+      }
+      this._overlayImage.style.top = endRect.top + 'px';
+      this._overlayImage.style.left = endRect.left + 'px';
+      this._overlayImage.style.width = endRect.width + 'px';
+      this._overlayImage.style.height = endRect.height + 'px';
+
+      const overlay = this._overlay;
+      const image = this._overlayImage;
+      const onEnd = () => {
+        image.removeEventListener('transitionend', onEnd);
+        overlay.classList.remove('fullframe-overlay_open');
+      };
+      image.addEventListener('transitionend', onEnd);
+    }
+  }
+
+  _getFullscreenRect(img) {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const maxWidth = viewportWidth * 0.92;
+    const maxHeight = viewportHeight * 0.92;
+    const ratio =
+      (img.naturalWidth || parseFloat(img.dataset.width) || maxWidth) /
+      (img.naturalHeight || parseFloat(img.dataset.height) || maxHeight);
+
+    let width = maxWidth;
+    let height = width / ratio;
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = height * ratio;
+    }
+
+    return {
+      width,
+      height,
+      left: (viewportWidth - width) / 2,
+      top: (viewportHeight - height) / 2,
+    };
   }
 
   /**

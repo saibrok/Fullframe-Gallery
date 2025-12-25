@@ -126,6 +126,31 @@ body {
   cursor: default;
 }
 
+.fullframe-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1000;
+}
+
+.fullframe-overlay_open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.fullframe-overlay__image {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
 .gallery {
   display: flex;
   flex-direction: column;

@@ -11,6 +11,7 @@ const state = {
   itemsToRender: 10,
   dataSource: 'images.json',
   stripSizes: false,
+  fullscreen: false,
 };
 
 const elements = {};
@@ -24,6 +25,7 @@ function cacheElements() {
   elements.rowsInput = document.getElementById('rowsInput');
   elements.autoRows = document.getElementById('autoRows');
   elements.gapInput = document.getElementById('gapInput');
+  elements.fullscreen = document.getElementById('fullscreen');
   elements.skeletonRatio = document.getElementById('skeletonRatio');
   elements.prevPage = document.getElementById('prevPage');
   elements.nextPage = document.getElementById('nextPage');
@@ -79,6 +81,7 @@ function renderGallery() {
       itemsPerPage: state.itemsPerPage,
       gap: state.gap,
       skeletonRatio: state.skeletonRatio,
+      fullscreen: state.fullscreen,
     });
   } else {
     galleryInstance.setItems(pageItems);
@@ -88,6 +91,7 @@ function renderGallery() {
       itemsPerPage: state.itemsPerPage,
       gap: state.gap,
       skeletonRatio: state.skeletonRatio,
+      fullscreen: state.fullscreen,
     });
   }
 
@@ -137,6 +141,11 @@ function bindControls() {
   elements.gapInput.addEventListener('input', function () {
     let value = parseInt(elements.gapInput.value, 10);
     state.gap = Number.isFinite(value) && value >= 0 ? value : 10;
+    renderGallery();
+  });
+
+  elements.fullscreen.addEventListener('change', function () {
+    state.fullscreen = elements.fullscreen.checked;
     renderGallery();
   });
 
